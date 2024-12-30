@@ -7,10 +7,8 @@ from git_ops import sync_schedules
 
 def main():
     schedule_events = get_schedule_events()
-    sync_schedules()
-    print("Finished fetching schedule from api and syncing schedules to remote repo")
-    # for event in schedule_events:
-    #     print(event["summary"])
+    for date, event in schedule_events.items():
+        print(date, event.display_name, event.schedule_type)
 
 
 if __name__ == "__main__":
