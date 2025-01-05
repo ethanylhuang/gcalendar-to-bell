@@ -1,14 +1,13 @@
 from git import Repo
 import shutil
 import os
-from project_root import PROJECT_ROOT
+from constants import PROJECT_ROOT, REMOTE_SCHEDULE_PATH, REMOTE_URL
 
 
 def sync_schedules():
 
-    REMOTE_URL = "https://github.com/nicolaschan/schedules.git"
-    TEMP_DIR = PROJECT_ROOT / "src" / "schedules" / "temp_schedules"
-    TARGET_DIR = PROJECT_ROOT / "src" / "schedules" / "lahs"
+    TEMP_DIR = REMOTE_SCHEDULE_PATH.parent.parent / "temp_schedules"
+    TARGET_DIR = REMOTE_SCHEDULE_PATH.parent
 
     # Clone repository
     if os.path.exists(TEMP_DIR):

@@ -1,16 +1,13 @@
-from pprint import pprint
 import re
 from googleapiclient.discovery import build
 from google.oauth2 import service_account
-from datetime import datetime, time
-from project_root import PROJECT_ROOT
-from calendar_ops import CalendarEvent
+from datetime import datetime
+from constants import PROJECT_ROOT, SCHOOL_YEAR_START, SCHOOL_YEAR_END
+from utils import print_schedule_events
+from models import CalendarEvent
 
-# Constants
 SCOPES = ["https://www.googleapis.com/auth/calendar.readonly"]
 CALENDAR_ID = "c_e281ee0055e616856c4f83178cad4a88da4cd3e11bc8b5354efb1ea14f45617e@group.calendar.google.com"
-SCHOOL_YEAR_START = datetime(2024, 8, 12, 0, 0)
-SCHOOL_YEAR_END = datetime(2025, 6, 6, 23, 59, 59)
 
 
 def get_all_events():
@@ -19,8 +16,8 @@ def get_all_events():
     )
     service = build("calendar", "v3", credentials=credentials)
 
-    start = SCHOOL_YEAR_START.isoformat() + "Z"
-    end = SCHOOL_YEAR_END.isoformat() + "Z"
+    start = SCHOOL_YEAR_START.isoformat() + "T00:00:00Z"
+    end = SCHOOL_YEAR_END.isoformat() + "T23:59:59Z"
 
     events = (
         service.events()
@@ -39,13 +36,26 @@ def get_all_events():
 
 
 def extract_date(event):
-    date = event["start"].get("dateTime", event["start"].get("date"))
-    return date.split("T")[0] if "T" in date else date
+    start_date = event["start"].get("dateTime", event["start"].get("date"))
+    end_date = event["end"].get("dateTime", event["end"].get("date"))
+
+    start_obj = datetime.strptime(
+        start_date.split("T")[0] if "T" in start_date else start_date, "%Y-%m-%d"
+    ).date()
+
+    end_obj = datetime.strptime(
+        end_date.split("T")[0] if "T" in end_date else end_date, "%Y-%m-%d"
+    ).date()
+
+    # If end date is same as start date, or if it's the next day (due to all-day event handling),
+    # return single date
+    if start_obj == end_obj or (end_obj - start_obj).days <= 1:
+        return start_obj.strftime("%-m/%-d/%Y")
+    else:
+        return start_obj.strftime("%-m/%-d/%Y") + "-" + end_obj.strftime("%-m/%-d/%Y")
 
 
 def create_schedule_event(letter, display_name=None):
-    if display_name is None:
-        display_name = f"Schedule {letter.upper()}"
     return CalendarEvent(
         display_name=display_name,
         schedule_type=f"schedule-{letter}",
@@ -80,13 +90,21 @@ def parse_schedule_event(event: dict) -> CalendarEvent:
     match = schedule_letter_pattern.search(formatted_text)
     if match:
         letter = match.group(1)
-        display_name = text.split(":")[1].strip() if ":" in text else None
+        display_name = (
+            text.split(": Schedule")[0].strip()
+            if ": Schedule" in text
+            else (
+                text.split("Schedule ")[1].split(":")[1].strip()
+                if "Schedule " in text and ":" in text
+                else None
+            )
+        )
         return create_schedule_event(letter, display_name)
 
     # PSAT events
     if "psat" in formatted_text:
         return CalendarEvent(
-            display_name="psat-testing",
+            display_name="PSAT Testing",
             schedule_type="psat",
         )
 
@@ -104,8 +122,8 @@ def parse_schedule_event(event: dict) -> CalendarEvent:
         finals_map = {"167": "1", "25": "2", "34": "3"}
         day_num = finals_map.get(periods_str, "unknown")
         return CalendarEvent(
-            display_name=f"finals-day-{day_num}",
-            schedule_type="finals",
+            display_name=f"Finals Day {day_num}",
+            schedule_type=f"finals-day-{day_num}",
         )
 
     return None
@@ -117,21 +135,5 @@ def get_schedule_events():
 
 
 if __name__ == "__main__":
-    from tabulate import tabulate
-
     schedule_events = get_schedule_events()
-
-    # Convert dictionary to list of lists for tabulate
-    table_data = [
-        [date, event.schedule_type, event.display_name]
-        for date, event in schedule_events.items()
-    ]
-
-    print("\nSchedule Events:")
-    print(
-        tabulate(
-            table_data,
-            headers=["Date", "Schedule Type", "Display Name"],
-            tablefmt="grid",
-        )
-    )
+    print_schedule_events(schedule_events)
