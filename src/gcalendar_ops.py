@@ -2,17 +2,22 @@ import re
 from googleapiclient.discovery import build
 from google.oauth2 import service_account
 from datetime import datetime
-from constants import PROJECT_ROOT, SCHOOL_YEAR_START, SCHOOL_YEAR_END
+from constants import (
+    PROJECT_ROOT,
+    SCHOOL_YEAR_START,
+    SCHOOL_YEAR_END,
+    SERVICE_ACCOUNT_PATH,
+    CALENDAR_ID,
+)
 from utils import print_schedule_events
 from models import CalendarEvent
 
 SCOPES = ["https://www.googleapis.com/auth/calendar.readonly"]
-CALENDAR_ID = "c_e281ee0055e616856c4f83178cad4a88da4cd3e11bc8b5354efb1ea14f45617e@group.calendar.google.com"
 
 
 def get_all_events():
     credentials = service_account.Credentials.from_service_account_file(
-        str(PROJECT_ROOT / "src" / "service-account.json"), scopes=SCOPES
+        str(SERVICE_ACCOUNT_PATH), scopes=SCOPES
     )
     service = build("calendar", "v3", credentials=credentials)
 

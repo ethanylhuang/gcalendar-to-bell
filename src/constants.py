@@ -11,3 +11,7 @@ SCHOOL_YEAR_END = date(2025, 6, 6)
 
 # Github repo
 REMOTE_URL = "https://github.com/nicolaschan/schedules.git"
+
+# Google Calendar
+CALENDAR_ID = "c_e281ee0055e616856c4f83178cad4a88da4cd3e11bc8b5354efb1ea14f45617e@group.calendar.google.com"
+SERVICE_ACCOUNT_PATH = PROJECT_ROOT / "service-account.json"
